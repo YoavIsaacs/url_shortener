@@ -5,18 +5,19 @@ import (
 	"net/http"
 	"os"
 
-	//"github.com/YoavIsaacs/url_shortener/internal/config"
+	"github.com/YoavIsaacs/url_shortener/internal/config"
 	"github.com/YoavIsaacs/url_shortener/internal/handler"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
 	// this will exit on error, so no need to handle here...
-	//	apiConfig := config.CreateConfig()
+	apiConfig := config.CreateConfig()
 
 	mux := http.NewServeMux()
 
-	err := godotenv.Load("../../internal/.env")
+	err := godotenv.Load("internal/.env")
 	if err != nil {
 		fmt.Println("error: error loading .env file")
 		return
@@ -30,6 +31,7 @@ func main() {
 	}
 
 	mux.HandleFunc("GET /api/health", handler.HealthCheck)
+	mux.HandleFunc("POST /new", handler.HandleAddURL(apiConfig))
 
 	err = serv.ListenAndServe()
 	if err != nil {

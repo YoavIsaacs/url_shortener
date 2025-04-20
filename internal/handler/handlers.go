@@ -33,7 +33,7 @@ func createShortDomain(original_domain string) string {
 	return shortened_domain
 }
 
-func HandleAddURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
+func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 	type ExpectedData struct {
 		CreatedAt      time.Time `json:"created_at"`
 		UpdatedAt      time.Time `json:"updated_at"`
@@ -103,4 +103,10 @@ func HandleAddURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
 	w.Write(responseData)
+}
+
+func HandleAddURL(c config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		addURL(c, w, r)
+	}
 }

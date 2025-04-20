@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/YoavIsaacs/url_shortener/internal/internal/db/sqlc"
 	"github.com/joho/godotenv"
@@ -14,9 +15,12 @@ type ApiConfig struct {
 }
 
 func CreateConfig() ApiConfig {
-	err := godotenv.Load("../.env")
+	fmt.Println("hi i'm here")
+	err := godotenv.Load("internal/.env")
 	if err != nil {
-		fmt.Println("error: error loading .env file")
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Println(err)
+		fmt.Printf("error: error loading .env file at %s, line: %d\n", file, line)
 		os.Exit(1)
 	}
 
