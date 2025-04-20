@@ -35,9 +35,7 @@ func createShortDomain(original_domain string) string {
 
 func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 	type ExpectedData struct {
-		CreatedAt      time.Time `json:"created_at"`
-		UpdatedAt      time.Time `json:"updated_at"`
-		OriginalDomain string    `json:"original_domain"`
+		OriginalDomain string `json:"original_domain"`
 	}
 
 	if r.Method != http.MethodPost {

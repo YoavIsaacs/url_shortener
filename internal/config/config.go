@@ -15,7 +15,6 @@ type ApiConfig struct {
 }
 
 func CreateConfig() ApiConfig {
-	fmt.Println("hi i'm here")
 	err := godotenv.Load("internal/.env")
 	if err != nil {
 		_, file, line, _ := runtime.Caller(0)
