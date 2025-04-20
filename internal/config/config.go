@@ -1,5 +1,9 @@
 package config
 
+import (
+	"github.com/YoavIsaacs/url_shortener/internal/internal/db/sqlc"
+)
+
 type ApiConfig struct {
-	DatabaseUrl string
+	database *sqlc.Queries
 }
