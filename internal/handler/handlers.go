@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/YoavIsaacs/url_shortener/internal/config"
+	"github.com/YoavIsaacs/url_shortener/internal/internal/db/sqlc"
 	"github.com/google/uuid"
 )
 
@@ -30,27 +31,9 @@ func createShortDomain(original_domain string) string {
 
 func HandleAddURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 	type ExpectedData struct {
-		Created_at      time.Time `json:"created_at"`
-		Updated_at      time.Time `json:"updated_at"`
-		Original_domain string    `json:"original_domain"`
-	}
-
-	type CreatedRow struct {
-		Id               uuid.UUID `json:"id"`
-		Created_at       time.Time `json:"created_at"`
-		Updated_at       time.Time `json:"updated_at"`
-		Original_domain  string    `json:"original_domain"`
-		Shortened_domain string    `json:"shortened_domain"`
-		Hits             int       `json:"hits"`
-	}
-
-	type Params struct {
-		Id               uuid.UUID `json:"id"`
-		Created_at       time.Time `json:"created_at"`
-		Updated_at       time.Time `json:"updated_at"`
-		Original_domain  string    `json:"original_domain"`
-		Shortened_domain string    `json:"shortened_domain"`
-		Hits             int       `json:"hits"`
+		CreatedAt      time.Time `json:"created_at"`
+		UpdatedAt      time.Time `json:"updated_at"`
+		OriginalDomain string    `json:"original_domain"`
 	}
 
 	if r.Method != http.MethodPost {
@@ -61,7 +44,9 @@ func HandleAddURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("error: could not create new id for this url...")
 		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write([]byte("error: could not create new id for this url..."))
+		return
 	}
 
 	paramTime := time.Now()
@@ -74,20 +59,44 @@ func HandleAddURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Printf("error: error decoding json: %s", err)
 		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write([]byte("error: error decoding json"))
 		return
 	}
 
-	shortened_domain := createShortDomain(receivedParamsDecoded.Original_domain)
+	shortenedDomain := createShortDomain(receivedParamsDecoded.OriginalDomain)
 
-	paramsToSend := Params{
-		Id:               paramId,
-		Created_at:       paramTime,
-		Updated_at:       paramTime,
-		Original_domain:  receivedParamsDecoded.Original_domain,
-		Shortened_domain: shortened_domain,
-		Hits:             0,
+	paramsToSend := sqlc.CreateNewURLParams{
+		ID:             paramId,
+		CreatedAt:      paramTime,
+		UpdatedAt:      paramTime,
+		OriginalDomain: receivedParamsDecoded.OriginalDomain,
+		ShortDomain:    shortenedDomain,
 	}
 
 	ctx := r.Context()
+
+	createdURL, err := c.Database.CreateNewURL(ctx, paramsToSend)
+	if err != nil {
+		fmt.Printf("error: error creating new URL: %s", err)
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte("error: error creating new URL"))
+		return
+	}
+
+	responseData, err := json.Marshal(createdURL)
+	if err != nil {
+		fmt.Printf("error: error decoding response: %s", err)
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte("error: error decoding response: %s"))
+		return
+	}
+
+	fmt.Printf("created new url: %+v\n", createdURL)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	w.Write(responseData)
 }
