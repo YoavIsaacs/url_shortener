@@ -1,35 +1,38 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
+	"net/http"
 	"os"
 
+	//"github.com/YoavIsaacs/url_shortener/internal/config"
+	"github.com/YoavIsaacs/url_shortener/internal/handler"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq" // make sure this import is here!
 )
 
 func main() {
+	// this will exit on error, so no need to handle here...
+	//	apiConfig := config.CreateConfig()
+
+	mux := http.NewServeMux()
+
 	err := godotenv.Load("../../internal/.env")
 	if err != nil {
-		fmt.Println("error: could not open env file...")
-		os.Exit(1)
+		fmt.Println("error: error loading .env file")
+		return
 	}
 
-	dbURL := os.Getenv("DB_URL")
+	port := os.Getenv("PORT")
+	servAddr := "localhost:" + port
+	serv := http.Server{
+		Handler: mux,
+		Addr:    servAddr,
+	}
 
-	db, err := sql.Open("postgres", dbURL)
+	mux.HandleFunc("GET /api/health", handler.HealthCheck)
+
+	err = serv.ListenAndServe()
 	if err != nil {
-		fmt.Println("error: could not initialize db:", err)
-		return
+		fmt.Println("error: server error")
 	}
-	defer db.Close()
-
-	// Actually test the connection
-	if err := db.Ping(); err != nil {
-		fmt.Println("error: could not connect to db:", err)
-		return
-	}
-
-	fmt.Println("success")
 }
