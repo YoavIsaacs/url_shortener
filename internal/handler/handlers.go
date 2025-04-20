@@ -14,6 +14,10 @@ import (
 	"github.com/google/uuid"
 )
 
+func HealthCheck(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("yaaay")
+}
+
 func createShortDomain(original_domain string) string {
 	hasher := md5.New()
 	hasher.Write([]byte(original_domain))
