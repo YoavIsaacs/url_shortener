@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/YoavIsaacs/url_shortener/internal/config"
 	"github.com/YoavIsaacs/url_shortener/internal/handler"
@@ -31,9 +32,17 @@ func main() {
 	}
 
 	mux.HandleFunc("GET /api/health", handler.HealthCheck)
-	mux.HandleFunc("POST /urls", handler.HandleAddURL(apiConfig))
+	mux.HandleFunc("POST /api/urls", handler.HandleAddURL(apiConfig))
 	mux.HandleFunc("POST /admin/reset", handler.HandleDeleteAllURLs(apiConfig))
 	mux.HandleFunc("POST /admin/reset-single", handler.HandleDeleteSingleURL(apiConfig))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		shortURL := r.URL.Path[1:]
+		if shortURL == "" || strings.Contains(shortURL, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		handler.HandleRedirect(apiConfig, shortURL)(w, r)
+	})
 
 	err = serv.ListenAndServe()
 	if err != nil {

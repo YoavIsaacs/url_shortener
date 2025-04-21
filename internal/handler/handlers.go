@@ -211,6 +211,39 @@ func deleteSingleURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request)
 	fmt.Println(responseString)
 }
 
+func handleRedirect(c config.ApiConfig, url string, w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	originalDomain, err := c.Database.GetURLViaShortURL(ctx, url)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte("error: error with internal response from query"))
+		fmt.Println("error: error with internal response from query")
+		return
+	}
+
+	if originalDomain == "" {
+		w.WriteHeader(404)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte("error: this short URL does not exist yet"))
+		fmt.Println("error: this short URL does not exist yet")
+		return
+	}
+	if !strings.HasPrefix(originalDomain, "http://") && !strings.HasPrefix(originalDomain, "https://") {
+		originalDomain = "https://" + originalDomain
+	}
+
+	http.Redirect(w, r, originalDomain, http.StatusFound)
+	fmt.Printf("successfully redirected to: %s", originalDomain)
+}
+
+func HandleRedirect(c config.ApiConfig, u string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		handleRedirect(c, u, w, r)
+	}
+}
+
 func HandleDeleteSingleURL(c config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		deleteSingleURL(c, w, r)
