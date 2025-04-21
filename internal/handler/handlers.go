@@ -68,6 +68,38 @@ func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 
 	shortenedDomain := createShortDomain(receivedParamsDecoded.OriginalDomain)
 
+	ctx := r.Context()
+	// chekc if the url already exists
+	checkOriginalDomain, err := c.Database.GetURLViaShortURL(ctx, shortenedDomain)
+	if err == nil {
+		type responseJson struct {
+			Message string `json:"msg"`
+			URL     string `json:"url"`
+		}
+
+		responseString := "the short url for " + receivedParamsDecoded.OriginalDomain + " already exists"
+
+		paramsPreMarshal := responseJson{
+			Message: responseString,
+			URL:     checkOriginalDomain,
+		}
+
+		params, err := json.Marshal(paramsPreMarshal)
+		if err != nil {
+			fmt.Printf("error: error marshalling repsosne data: %s", err)
+			w.WriteHeader(500)
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Write([]byte("error: error marshalling repsosne data"))
+			return
+		}
+
+		fmt.Println(responseString)
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(params)
+		return
+	}
+
 	paramsToSend := sqlc.CreateNewURLParams{
 		ID:             paramId,
 		CreatedAt:      paramTime,
@@ -75,8 +107,6 @@ func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 		OriginalDomain: receivedParamsDecoded.OriginalDomain,
 		ShortDomain:    shortenedDomain,
 	}
-
-	ctx := r.Context()
 
 	createdURL, err := c.Database.CreateNewURL(ctx, paramsToSend)
 	if err != nil {
