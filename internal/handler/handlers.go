@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -19,7 +19,7 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func createShortDomain(original_domain string) string {
-	hasher := md5.New()
+	hasher := sha256.New()
 	hasher.Write([]byte(original_domain))
 	hashBytes := hasher.Sum(nil)
 
@@ -47,7 +47,11 @@ func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 		fmt.Println("error: could not create new id for this url...")
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte("error: could not create new id for this url..."))
+		_, err := w.Write([]byte("error: could not create new id for this url..."))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		return
 	}
 
@@ -62,7 +66,11 @@ func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("error: error decoding json: %s", err)
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte("error: error decoding json"))
+		_, err := w.Write([]byte("error: error decoding json"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		return
 	}
 
@@ -89,14 +97,22 @@ func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("error: error marshalling repsosne data: %s", err)
 			w.WriteHeader(500)
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Write([]byte("error: error marshalling repsosne data"))
+			_, err := w.Write([]byte("error: error marshalling repsosne data"))
+			if err != nil {
+				fmt.Println("Failed to write response:", err)
+				return
+			}
 			return
 		}
 
 		fmt.Println(responseString)
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(params)
+		_, err = w.Write(params)
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		return
 	}
 
@@ -113,7 +129,11 @@ func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("error: error creating new URL: %s", err)
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte("error: error creating new URL"))
+		_, err := w.Write([]byte("error: error creating new URL"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		return
 	}
 
@@ -122,7 +142,11 @@ func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("error: error decoding response: %s", err)
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte("error: error decoding response: %s"))
+		_, err := w.Write([]byte("error: error decoding response: %s"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		return
 	}
 
@@ -130,7 +154,11 @@ func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
-	w.Write(responseData)
+	_, err = w.Write(responseData)
+	if err != nil {
+		fmt.Println("Failed to write response:", err)
+		return
+	}
 }
 
 func deleteAllURLs(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
@@ -143,13 +171,21 @@ func deleteAllURLs(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte("error: error reseting database...\n"))
+		_, err := w.Write([]byte("error: error reseting database...\n"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		fmt.Println("error: error reseting database...")
 		return
 	}
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte("successfully reset database"))
+	_, err = w.Write([]byte("successfully reset database"))
+	if err != nil {
+		fmt.Println("Failed to write response:", err)
+		return
+	}
 	fmt.Println("successfully reset database")
 }
 
@@ -171,7 +207,11 @@ func deleteSingleURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request)
 		fmt.Printf("error: error decoding json: %s", err)
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte("error: error decoding json"))
+		_, err := w.Write([]byte("error: error decoding json"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		return
 	}
 
@@ -181,7 +221,11 @@ func deleteSingleURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte("error: error removing single url"))
+		_, err := w.Write([]byte("error: error removing single url"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		fmt.Println("error: error removing single url")
 		return
 	}
@@ -190,7 +234,11 @@ func deleteSingleURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte("error: error with internal response from query"))
+		_, err := w.Write([]byte("error: error with internal response from query"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		fmt.Println("error: error with internal response from query")
 		return
 	}
@@ -199,7 +247,11 @@ func deleteSingleURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request)
 		responseString := receivedParamsDecoded.ShortDomain + " does not exist"
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte(responseString))
+		_, err := w.Write([]byte(responseString))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		fmt.Println(responseString)
 		return
 	}
@@ -207,7 +259,11 @@ func deleteSingleURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request)
 	responseString := "successfully removed: " + receivedParamsDecoded.ShortDomain
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(responseString))
+	_, err = w.Write([]byte(responseString))
+	if err != nil {
+		fmt.Println("Failed to write response:", err)
+		return
+	}
 	fmt.Println(responseString)
 }
 
@@ -218,7 +274,11 @@ func handleRedirect(c config.ApiConfig, url string, w http.ResponseWriter, r *ht
 	if err != nil {
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte("error: error with internal response from query"))
+		_, err := w.Write([]byte("error: error with internal response from query"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		fmt.Println("error: error with internal response from query")
 		return
 	}
@@ -226,7 +286,11 @@ func handleRedirect(c config.ApiConfig, url string, w http.ResponseWriter, r *ht
 	if originalDomain == "" {
 		w.WriteHeader(404)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte("error: this short URL does not exist yet"))
+		_, err := w.Write([]byte("error: this short URL does not exist yet"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
 		fmt.Println("error: this short URL does not exist yet")
 		return
 	}

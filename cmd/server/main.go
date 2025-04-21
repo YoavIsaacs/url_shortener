@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/YoavIsaacs/url_shortener/internal/config"
 	"github.com/YoavIsaacs/url_shortener/internal/handler"
@@ -27,8 +28,9 @@ func main() {
 	port := os.Getenv("PORT")
 	servAddr := "localhost:" + port
 	serv := http.Server{
-		Handler: mux,
-		Addr:    servAddr,
+		Handler:     mux,
+		Addr:        servAddr,
+		ReadTimeout: time.Second * 30,
 	}
 
 	mux.HandleFunc("GET /api/health", handler.HealthCheck)
