@@ -123,6 +123,70 @@ func deleteAllURLs(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("successfully reset database")
 }
 
+func deleteSingleURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
+	type ExpectedData struct {
+		ShortDomain string `json:"short_domain"`
+	}
+
+	if r.Method != http.MethodPost {
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+
+	receivedParamsDecoded := ExpectedData{}
+
+	err := decoder.Decode(&receivedParamsDecoded)
+	if err != nil {
+		fmt.Printf("error: error decoding json: %s", err)
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte("error: error decoding json"))
+		return
+	}
+
+	ctx := r.Context()
+
+	result, err := c.Database.DeleteSingleURL(ctx, receivedParamsDecoded.ShortDomain)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte("error: error removing single url"))
+		fmt.Println("error: error removing single url")
+		return
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte("error: error with internal response from query"))
+		fmt.Println("error: error with internal response from query")
+		return
+	}
+
+	if affected == 0 {
+		responseString := receivedParamsDecoded.ShortDomain + " does not exist"
+		w.WriteHeader(200)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(responseString))
+		fmt.Println(responseString)
+		return
+	}
+
+	responseString := "successfully removed: " + receivedParamsDecoded.ShortDomain
+	w.WriteHeader(200)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write([]byte(responseString))
+	fmt.Println(responseString)
+}
+
+func HandleDeleteSingleURL(c config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		deleteSingleURL(c, w, r)
+	}
+}
+
 func HandleDeleteAllURLs(c config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		deleteAllURLs(c, w, r)
