@@ -1,35 +1,53 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
+	"time"
 
+	"github.com/YoavIsaacs/url_shortener/internal/config"
+	"github.com/YoavIsaacs/url_shortener/internal/handler"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq" // make sure this import is here!
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	err := godotenv.Load("../../internal/.env")
+	// this will exit on error, so no need to handle here...
+	apiConfig := config.CreateConfig()
+
+	mux := http.NewServeMux()
+
+	err := godotenv.Load("internal/.env")
 	if err != nil {
-		fmt.Println("error: could not open env file...")
-		os.Exit(1)
-	}
-
-	dbURL := os.Getenv("DB_URL")
-
-	db, err := sql.Open("postgres", dbURL)
-	if err != nil {
-		fmt.Println("error: could not initialize db:", err)
-		return
-	}
-	defer db.Close()
-
-	// Actually test the connection
-	if err := db.Ping(); err != nil {
-		fmt.Println("error: could not connect to db:", err)
+		fmt.Println("error: error loading .env file")
 		return
 	}
 
-	fmt.Println("success")
+	port := os.Getenv("PORT")
+	servAddr := "localhost:" + port
+	serv := http.Server{
+		Handler:     mux,
+		Addr:        servAddr,
+		ReadTimeout: time.Second * 30,
+	}
+
+	mux.HandleFunc("GET /api/health", handler.HealthCheck)
+	mux.HandleFunc("POST /api/urls", handler.HandleAddURL(apiConfig))
+	mux.HandleFunc("POST /admin/reset", handler.HandleDeleteAllURLs(apiConfig))
+	mux.HandleFunc("POST /admin/reset-single", handler.HandleDeleteSingleURL(apiConfig))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		shortURL := r.URL.Path[1:]
+		if shortURL == "" || strings.Contains(shortURL, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		handler.HandleRedirect(apiConfig, shortURL)(w, r)
+	})
+
+	err = serv.ListenAndServe()
+	if err != nil {
+		fmt.Println("error: server error")
+	}
 }
