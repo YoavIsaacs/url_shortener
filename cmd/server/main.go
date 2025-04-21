@@ -32,6 +32,7 @@ func main() {
 
 	mux.HandleFunc("GET /api/health", handler.HealthCheck)
 	mux.HandleFunc("POST /new", handler.HandleAddURL(apiConfig))
+	mux.HandleFunc("POST /admin/reset", handler.HandleDeleteAllURLs(apiConfig))
 
 	err = serv.ListenAndServe()
 	if err != nil {

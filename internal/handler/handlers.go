@@ -15,7 +15,7 @@ import (
 )
 
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("yaaay")
+	fmt.Println("server is working properly")
 }
 
 func createShortDomain(original_domain string) string {
@@ -101,6 +101,32 @@ func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
 	w.Write(responseData)
+}
+
+func deleteAllURLs(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		return
+	}
+
+	ctx := r.Context()
+	err := c.Database.DeleteAllURLs(ctx)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte("error: error reseting database...\n"))
+		fmt.Println("error: error reseting database...")
+		return
+	}
+	w.WriteHeader(200)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write([]byte("successfully reset database"))
+	fmt.Println("successfully reset database")
+}
+
+func HandleDeleteAllURLs(c config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		deleteAllURLs(c, w, r)
+	}
 }
 
 func HandleAddURL(c config.ApiConfig) http.HandlerFunc {
