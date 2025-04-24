@@ -299,7 +299,7 @@ func handleRedirect(c config.ApiConfig, short string, w http.ResponseWriter, r *
 	}
 
 	http.Redirect(w, r, originalDomain, http.StatusFound)
-	fmt.Printf("successfully redirected to: %s", originalDomain)
+	fmt.Printf("successfully redirected to: %s\n", originalDomain)
 	c.Database.AddOneToHits(ctx, short)
 }
 
@@ -326,20 +326,9 @@ func handleCreateQRCode(c config.ApiConfig, w http.ResponseWriter, r *http.Reque
 	ctx := r.Context()
 	short := receivedParamsDecoded.Short
 
-	originalDomain, err := c.Database.GetURLViaShortURL(ctx, short)
-	if err != nil {
-		w.WriteHeader(500)
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, err := w.Write([]byte("error: error with internal response from query"))
-		if err != nil {
-			fmt.Println("Failed to write response:", err)
-			return
-		}
-		fmt.Println("error: error with internal response from query")
-		return
-	}
+	toEncode := ensureHTTPS("http://localhost:8080/" + short)
 
-	png, err := createQRCode(originalDomain)
+	png, err := createQRCode(toEncode)
 	if err != nil {
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -390,14 +379,11 @@ func createQRCode(originalDomain string) ([]byte, error) {
 }
 
 func ensureHTTPS(url string) string {
-	if strings.HasPrefix(url, "https://") {
+	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
 		return url
 	}
-	// also handle http:// if you want to normalize everything to https
-	if strings.HasPrefix(url, "http://") {
-		return "https://" + strings.TrimPrefix(url, "http://")
-	}
-	return "https://" + url
+	// Otherwise, add http:// prefix
+	return "http://" + url
 }
 
 func HandleAddQR(c config.ApiConfig) http.HandlerFunc {
