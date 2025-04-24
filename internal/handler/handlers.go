@@ -267,10 +267,10 @@ func deleteSingleURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request)
 	fmt.Println(responseString)
 }
 
-func handleRedirect(c config.ApiConfig, url string, w http.ResponseWriter, r *http.Request) {
+func handleRedirect(c config.ApiConfig, short string, w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	originalDomain, err := c.Database.GetURLViaShortURL(ctx, url)
+	originalDomain, err := c.Database.GetURLViaShortURL(ctx, short)
 	if err != nil {
 		w.WriteHeader(500)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -300,6 +300,7 @@ func handleRedirect(c config.ApiConfig, url string, w http.ResponseWriter, r *ht
 
 	http.Redirect(w, r, originalDomain, http.StatusFound)
 	fmt.Printf("successfully redirected to: %s", originalDomain)
+	c.Database.AddOneToHits(ctx, short)
 }
 
 func HandleRedirect(c config.ApiConfig, u string) http.HandlerFunc {

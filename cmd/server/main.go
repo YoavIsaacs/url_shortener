@@ -14,6 +14,7 @@ import (
 )
 
 func main() {
+	fmt.Println("Server starting...")
 	// this will exit on error, so no need to handle here...
 	apiConfig := config.CreateConfig()
 
