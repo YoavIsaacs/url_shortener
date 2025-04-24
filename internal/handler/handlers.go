@@ -12,6 +12,7 @@ import (
 	"github.com/YoavIsaacs/url_shortener/internal/config"
 	"github.com/YoavIsaacs/url_shortener/internal/internal/db/sqlc"
 	"github.com/google/uuid"
+	qrcode "github.com/skip2/go-qrcode"
 )
 
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +59,6 @@ func addURL(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
 	paramTime := time.Now()
 
 	decoder := json.NewDecoder(r.Body)
-
 	receivedParamsDecoded := ExpectedData{}
 
 	err = decoder.Decode(&receivedParamsDecoded)
@@ -301,6 +301,109 @@ func handleRedirect(c config.ApiConfig, short string, w http.ResponseWriter, r *
 	http.Redirect(w, r, originalDomain, http.StatusFound)
 	fmt.Printf("successfully redirected to: %s", originalDomain)
 	c.Database.AddOneToHits(ctx, short)
+}
+
+func handleCreateQRCode(c config.ApiConfig, w http.ResponseWriter, r *http.Request) {
+	type expected struct {
+		Short string `json:"short_domain"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	receivedParamsDecoded := expected{}
+
+	err := decoder.Decode(&receivedParamsDecoded)
+	if err != nil {
+		fmt.Printf("error: error decoding json: %s", err)
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, err := w.Write([]byte("error: error decoding json"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
+		return
+	}
+	ctx := r.Context()
+	short := receivedParamsDecoded.Short
+
+	originalDomain, err := c.Database.GetURLViaShortURL(ctx, short)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, err := w.Write([]byte("error: error with internal response from query"))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
+		fmt.Println("error: error with internal response from query")
+		return
+	}
+
+	png, err := createQRCode(originalDomain)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, err := w.Write([]byte("error: error creating qr code..."))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
+		fmt.Println("error: error creating qr code...")
+		return
+	}
+
+	params := sqlc.AddQRCodeParams{
+		ShortDomain: short,
+		QrCode:      png,
+	}
+
+	qr, err := c.Database.AddQRCode(ctx, params)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, err := w.Write([]byte("error: error storing qr code..."))
+		if err != nil {
+			fmt.Println("Failed to write response:", err)
+			return
+		}
+		fmt.Println("error: error storing qr code...")
+		return
+	}
+
+	w.WriteHeader(200)
+	w.Header().Set("Content-Type", "image/png")
+	_, err = w.Write(qr.QrCode)
+	if err != nil {
+		fmt.Println("Failed to write response:", err)
+		return
+	}
+}
+
+func createQRCode(originalDomain string) ([]byte, error) {
+	var png []byte
+	originalDomain = ensureHTTPS(originalDomain)
+	png, err := qrcode.Encode(originalDomain, qrcode.Medium, 256)
+	if err != nil {
+		return []byte{}, err
+	}
+	return png, nil
+}
+
+func ensureHTTPS(url string) string {
+	if strings.HasPrefix(url, "https://") {
+		return url
+	}
+	// also handle http:// if you want to normalize everything to https
+	if strings.HasPrefix(url, "http://") {
+		return "https://" + strings.TrimPrefix(url, "http://")
+	}
+	return "https://" + url
+}
+
+func HandleAddQR(c config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		handleCreateQRCode(c, w, r)
+	}
 }
 
 func HandleRedirect(c config.ApiConfig, u string) http.HandlerFunc {

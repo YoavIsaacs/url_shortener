@@ -36,6 +36,7 @@ func main() {
 
 	mux.HandleFunc("GET /api/health", handler.HealthCheck)
 	mux.HandleFunc("POST /api/urls", handler.HandleAddURL(apiConfig))
+	mux.HandleFunc("POST /api/urls/add-qr", handler.HandleAddQR(apiConfig))
 	mux.HandleFunc("POST /admin/reset", handler.HandleDeleteAllURLs(apiConfig))
 	mux.HandleFunc("POST /admin/reset-single", handler.HandleDeleteSingleURL(apiConfig))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

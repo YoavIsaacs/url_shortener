@@ -15,7 +15,7 @@ import (
 const createNewURL = `-- name: CreateNewURL :one
 INSERT INTO urls (id, created_at, updated_at, hits, original_domain, short_domain)
   VALUES ($1, $2, $3, 0, $4, $5)
-  RETURNING id, created_at, updated_at, hits, original_domain, short_domain
+  RETURNING id, created_at, updated_at, hits, original_domain, short_domain, qr_code
 `
 
 type CreateNewURLParams struct {
@@ -42,6 +42,7 @@ func (q *Queries) CreateNewURL(ctx context.Context, arg CreateNewURLParams) (Url
 		&i.Hits,
 		&i.OriginalDomain,
 		&i.ShortDomain,
+		&i.QrCode,
 	)
 	return i, err
 }

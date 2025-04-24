@@ -5,7 +5,8 @@ CREATE TABLE urls (
   updated_at TIMESTAMP NOT NULL,
   hits INTEGER NOT NULL,
   original_domain TEXT NOT NULL,
-  short_domain TEXT NOT NULL UNIQUE
+  short_domain TEXT NOT NULL UNIQUE,
+  qr_code BYTEA NOT NULL DEFAULT '\x'::bytea
 );
 
 -- +goose Down

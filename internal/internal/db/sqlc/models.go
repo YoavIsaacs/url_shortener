@@ -17,4 +17,5 @@ type Url struct {
 	Hits           int32
 	OriginalDomain string
 	ShortDomain    string
+	QrCode         []byte
 }
